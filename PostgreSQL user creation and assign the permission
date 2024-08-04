@@ -1,0 +1,28 @@
+root@PGServer:/home/dept# sudo -u postgres psql
+postgres=# create database chirags_web;
+postgres=# create user chiragusr with encrypted password 'admin@123';
+postgres=# grant all privileges on database chirags_web to chiragusr; 
+postgres=# \qCopy
+root@PGServer:/home/dept# su postgres
+postgres@PGServer:/home/dept$ pg_restore -U postgres -d chirags_web /mnt/backup/db_bkpCopy
+root@PGServer:/home/dept# sudo -u postgres psql
+postgres=# \c chirags_web
+postgres=# GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO chiragusr;
+postgres=# GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO chiragusr;Copy
+Server IP details.
+
+Application server IP : 192.168.21.52
+
+Database server IP : 192.168.21.53
+
+root@PGServer:/home/dept# cd /etc/postgresql/12/main/
+root@PGServer:/etc/postgresql/12/main# vi pg_hba.confCopy
+Add below code to access the database from application server.
+
+# IPv4 local connections:
+
+............
+host    chirags_web    chiragusr       192.168.21.52/32         md5Copy
+Accessing from the application server
+
+psql -h 192.168.21.53 -p 5432 -d chirags_web -U chiragusr -W

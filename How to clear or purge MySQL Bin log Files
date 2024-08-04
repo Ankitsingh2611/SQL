@@ -1,0 +1,27 @@
+Access the MySQL prompt.
+
+The following command will delete all logs prior to the log file mysql-bin.0004
+
+mysql> PURGE BINARY LOGS TO 'mysql-bin.0004';
+
+The following command will delete all logs before 2024-02-15
+
+mysql> PURGE BINARY LOGS BEFORE '2024-02-15 10:00:00';
+
+The following command will delete all logs older than 7 days.
+
+mysql> PURGE BINARY LOGS BEFORE DATE_SUB( NOW( ), INTERVAL 7 DAY);
+
+The following command will delete all logs till now.
+
+mysql> PURGE BINARY LOGS BEFORE now();
+
+You will not need to do purge logs manually, logs older than 10 days will be purged automatically by the MySQL server if you add the following lines in the MySQL configuration file.
+
+expire_logs_days = 10
+
+max_binlog_size = 100M
+
+Restart MySQL server
+
+/etc/init.d/mysql restart

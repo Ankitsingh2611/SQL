@@ -1,0 +1,86 @@
+CREATE DATABASE Worker (
+    WORKER_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    FIRST_NAME CHAR(25),
+    LAST_NAME CHAR(25),
+    SALARY INT(15),
+    JOINING_DATE DATETIME,
+    DEPARTMENT VARCHAR(50)
+    );
+
+INSERT INTO Worker
+    (WORKER_ID, FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE, DEPARTMENT) VALUES
+    (1, 'John', 'Doe', 50000, '14-02-20 09.00.00', 'HR'),
+    (2, 'Jane', 'Doe', 60000, '14-02-20 09.00.00', 'ADMIN'),
+    (3, 'Ankit', 'Singh', 70000, '14-02-20 09.00.00', 'HR');
+
+CREATE TABLE order_detail(
+    ORDER_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    delhivery_data DATE,
+    CUST_ID INT,
+    FOREIGN KEY (CUST_ID) REFERENCES customers(ID)
+);
+
+
+
+
+
+//CHECK
+CREATE table account(
+    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) UNIQUE,
+    balance INT,
+    CONSTANT acc_balance_chk CHECK(balance>1000)
+);
+INSERT INTO account(id, name, balance)
+VALUES (1, 'a', 1000);
+SELECT * FROM account;
+
+
+
+
+
+
+//Default
+CREATE table account(
+    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) UNIQUE,
+    balance INT NOT NULL DEFAULT 0,
+);
+INSERT INTO account(id, name, balance)
+VALUES (1, 'a');
+
+DROP table account;
+
+SELECT * FROM account;  
+
+
+
+
+
+
+
+//ALTER
+//ADD NEW COLUMN
+CREATE table account(
+    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) UNIQUE,
+    balance INT NOT NULL DEFAULT 0,
+);
+SELECT * FROM account;  
+
+//ADD
+ALTER TABLE account ADD intrest FLOAT NOT NULL DEFAULT 0;
+
+//MODIFY
+ALTER TABLE account MODIFY intrest DOUBLE NOT NULL DEFAULT 0;
+DESC account;
+
+//CHANGE COLUMN RENAME
+ALTER TABLE account CHANGE COLUMN interest saving_intrest FLOAT NOT NULL DEFAULT 0;
+
+//DROP COLUMN
+ALTER TABLE account DROP COLUMN saving_intrest;
+
+
+//RENAME TABLE
+ALTER TABLE account RENAME TO account_detail;

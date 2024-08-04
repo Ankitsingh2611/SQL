@@ -1,0 +1,20 @@
+shell>mysql -u root -p
+
+mysql> show binary logs;
+
+Copy
+Remove MySQL Binary Log with PURGE BINARY LOGS Statement PURGE BINARY LOGS statement can remove Binary Log base on date or up to a Binary Log sequence number
+
+Base on the binary logs example shown above, I would like to remove binary up to mysql-bin.000155
+
+shell>mysql -u root -p
+
+mysql>PURGE BINARY LOGS TO 'mysql-bin.000155';Copy
+Alternatively, you can remove the binary older than a specific date.
+
+shell> mysql -u root -p
+
+mysql> PURGE BINARY LOGS BEFORE '2024-01-01 00:00:00';Copy
+If you need to delete all binary logs older than 1 day, you just need to run this sql.
+
+mysql> PURGE BINARY LOGS BEFORE DATE_SUB( NOW(), INTERVAL 1 DAY);

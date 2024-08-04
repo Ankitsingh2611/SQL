@@ -1,0 +1,20 @@
+DDL(data definition language)
+   CREATE
+   ALTER TABLE
+   DROP
+   TRUNCATE
+   RENAME
+DRL/DQL(data retrieval language/data query language)
+   SELECT
+DML(data modification language)
+   INSERT
+   UPDATE
+   DELETE
+DCL(data control language)
+   GRANT
+   REVOKE
+TCL(transaction control language)
+   START TRANSACTION
+   COMMIT
+   ROLLBACK
+   SAVEPOINT

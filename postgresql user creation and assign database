@@ -1,0 +1,31 @@
+sudo -u postgres psql
+
+create database db_chirags;
+
+create user chiragsusr with encrypted password 'deJmEc1p1Sc#964@!';
+
+grant all privileges on database db_chirags to chiragsusr;
+
+psql db_chirags < /opt/db_chirags
+
+---or---
+
+su postgres
+
+pg_restore -U postgres -d db_chirags /opt/db_chirags_backup
+
+postgres=# \c db_chirags
+
+postgres=# GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO chiragsusr;
+
+// accessing from 192.168.32.131 server
+
+psql -h 192.168.32.130 -p 5432 -d db_chirags -U chiragsusr -W
+
+--------------------------pg_hba.conf---------------------------------
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# IPv4 local connections:
+
+host    db_chirags      chiragsusr      192.168.32.131/32          md5

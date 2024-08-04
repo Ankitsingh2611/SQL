@@ -1,0 +1,271 @@
+@echo off
+
+For /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set mytime=%%a%%b)
+
+
+set usr=root
+set pwd=
+set backupdir="C:\mysqlAutoBackup\backup"
+set dbname=carservcrud
+set dmpdir="C:\xampp824\mysql\bin\mysqldump.exe"
+
+%dmpdir% --host=localhost --user=%usr% --password=%pwd% %dbname% > %backupdir%\%dbname%%mytime%.sql 2> %backupdir%\%dbname%%mydate%_%mytime%.log
+
+
+\end{code}  
+
+
+
+
+# mysqldump -u root -p colour > C:\Users\ANKIT\MysqlAutoBackup\Backup\colour.sql 2>C:\Users\ANKIT\MysqlAutoBackup\Backup\colour.log
+c:\xampp
+# mysql -u root -p
+show databases;
+use kiderweb;
+show tables;
+desc cities;
+select * from cities
+
+
+c:\xampp
+# mysql -u root -p
+show databases;
+use kiderweb;
+show tables;
+desc cities;
+select * from cities
+
+
+
+
+
+sqlcmd
+Select name from sys.databases;
+go
+
+sqlcmd -S DESKTOP-5CM59FO -E
+
+
+
+sqlcmd -S DESKTOP-5CM59FO -E
+select name from sys.databases; 
+go
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@echo off
+
+For /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set mytime=%%a%%b)
+
+
+set usr=root
+set pwd=
+set backupdir="C:\mysqlAutoBackup\backup"
+set dbname=carservcrud
+set dmpdir="C:\xampp824\mysql\bin\mysqldump.exe"
+
+%dmpdir% --host=localhost --user=%usr% --password=%pwd% %dbname% > %backupdir%\%dbname%%mytime%.sql 2> %backupdir%\%dbname%%mydate%_%mytime%.log
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# mysqldump -u root -p colour > C:\Users\ANKIT\MysqlAutoBackup\Backup\colour.sql 2>C:\Users\ANKIT\MysqlAutoBackup\Backup\colour.log
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+c:\xampp
+# mysql -u root -p
+show databases;
+use kiderweb;
+show tables;
+desc cities;
+select * from cities
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@ECHO OFF
+if EXIST "Control Panel.{21EC2020-3AEA-1069-A2DD-08002B30309D}" goto UNLOCK
+if NOT EXIST Private goto MDPrivate
+:CONFIRM
+echo Are you sure to lock this folder? (Y/N)
+set/p "cho=>"
+if %cho%==Y goto LOCK
+if %cho%==y goto LOCK
+if %cho%==n goto END
+if %cho%==N goto END
+echo Invalid choice.
+goto CONFIRM
+:LOCK
+ren Private "Control Panel.{21EC2020-3AEA-1069-A2DD-08002B30309D}"
+attrib +h +s "Control Panel.{21EC2020-3AEA-1069-A2DD-08002B30309D}"
+echo Folder locked
+goto End
+:UNLOCK
+echo Enter password to Unlock Your Secure Folder
+set/p "pass=>"
+if NOT %pass%== YOUR-PASSWORD goto FAIL
+attrib -h -s "Control Panel.{21EC2020-3AEA-1069-A2DD-08002B30309D}"
+ren "Control Panel.{21EC2020-3AEA-1069-A2DD-08002B30309D}" Private
+echo Folder Unlocked successfully
+goto End
+:FAIL
+echo Invalid password
+goto end
+:MDPrivate
+md Private
+echo Private created successfully
+goto End
+:End
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sqlcmd
+Select name from sys.databases;
+go
+
+
+sqlcmd -S DESKTOP-5CM59FO -E
+
+
+
+
+sqlcmd -S DESKTOP-5CM59FO -E
+select name from sys.databases; 
+go
+
+
+
+
+sqlcmd -S DESKTOP-5CM59FO -U sa
+Password: admin@123
+select name from sys.databases
+go
+
+
+
+
+
+
+
+sqlcmd -S DESKTOP-5CM59FO -U sa
+Password: admin@123
+select name from sys.databases
+go
+
+create database Ankit 
+go
+select name from sys.databases
+go
+
+
+
+
+sp_who
+(Check which is sleeping)
+
+
+exec sp_who2
+Go

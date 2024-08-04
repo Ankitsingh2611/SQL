@@ -1,0 +1,15 @@
+@echo off
+
+For /f "tokens=2-4 delims=/ " %%a in ('date /t') do (set mydate=%%c-%%a-%%b)
+For /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set mytime=%%a%%b)
+
+SET PGPASSWORD=admin@123
+echo on
+D:\"Program Files"\PostgreSQL\16\bin\pg_dump -h localhost -p 5432 -U postgres -F c -b -v -f D:\\ScheduleBackup\\mydb_%mytime%_%mydate%.backup mydbCopy
+-F c is custom format (compressed, and able to do in parallel with -j N )
+
+-b is including blobs,
+
+-v is verbose,
+
+-f is the backup file name.

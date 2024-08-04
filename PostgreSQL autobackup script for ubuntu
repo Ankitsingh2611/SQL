@@ -1,0 +1,37 @@
+PostgreSQL Autobackup script for ubuntu
+
+This script need to run under the postgres user.  The best way to do that is to insert it into crontab :
+
+#su - postgresCopy
+Create sh script file
+
+$ vi backup_all_db.shCopy
+(insert below code script)
+
+#!/bin/bash
+# Location to place backups.
+backup_dir="/mnt/backup/"
+#String to append to the name of the backup files
+backup_date=`date +%d-%m-%Y_%H`
+#Numbers of days you want to keep copies of your databases
+number_of_days=30
+databases=`psql -l -t | cut -d'|' -f1 | sed -e 's/ //g' -e '/^$/d'`
+for i in $databases; do
+  if [ "$i" != "template0" ] && [ "$i" != "template1" ]; then
+    echo Dumping $i to $backup_dir$i\_$backup_date
+    pg_dump -Fc $i > $backup_dir$i\_$backup_date
+  fi
+done
+find $backup_dir -type f -prune -mtime +$number_of_days -exec rm -f {} \;Copy
+Give permission to the file
+
+$ chmod 700 backup_all_db.shCopy
+Give Ownership of the file
+
+$ sudo chown -R postgres:postgres /mnt/backup/Copy
+Edit Cronjob file
+
+$ crontab -eCopy
+And add a lines for schedule for 6am 2pm and 6pm:
+
+00 6,14,18 * * * /var/lib/pgsql/all_db_backup.sh

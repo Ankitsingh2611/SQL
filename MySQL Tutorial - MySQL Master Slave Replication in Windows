@@ -1,0 +1,135 @@
+Database replication is the frequent electronic copying of data from a database in one computer or server to a database in another. 
+
+In this example, two XAMPP servers are being used.
+
+    Master – Server IP (Ex. 192.168.157.128) for demo I have localhost.
+    Slave – Server IP (Ex. 192.168.157.129)Copy
+You need to install XAMPP with MySQL server on both master and slave machine or Install Two XAMPP in Same Machine.
+
+PART 1 - In master server
+
+-----------------------------------------------
+
+Step 1. Login to Master Server. 
+
+Edit & Modify the Configuration file of MySql.
+
+#log-bin Configuration in my.ini
+
+log-bin="C:/mysql_master_logs/log-bin.log"
+
+server-id = 1Copy
+# bind-address = 127.0.0.1         #comment this line if you want to remotely access your server
+
+Step 2. Restart Mysql Server.
+
+Step 3. Login to Mysql Server.
+
+mysql -u root -pCopy
+Step 4.  Create a new user for Replication and specify the Password to that user.
+
+MariaDB [(none)]> CREATE USER 'mysqlrepli'@'localhost' IDENTIFIED BY 'admin@123';
+MariaDB [(none)]> GRANT REPLICATION SLAVE ON *.* TO 'mysqlrepli'@'localhost';
+MariaDB [(none)]> FLUSH PRIVILEGES;Copy
+/* not using the below code for now. Here I am using one machine for demo.
+
+MariaDB [(none)]> create user 'mysqlrepli'@'192.168.157.128' identified by 'admin@123';
+
+MariaDB [(none)]> GRANT REPLICATION SLAVE ON *.* TO 'mysqlrepli'@'192.168.157.128';
+
+MariaDB [(none)]> FLUSH PRIVILEGES;
+
+*/
+
+Example : 
+
+MariaDB [(none)]> CREATE USER 'replication_user'@'192.168.157.128' IDENTIFIED BY 'replica_password';
+
+MariaDB [(none)]> GRANT REPLICATION SLAVE ON *.* TO 'replication_user '@'192.168.157.128';Copy
+Step 5. binary logging
+
+# check binary logging
+
+MariaDB [(none)]> show global variables like 'log_bin';Copy
+# View the binary log location
+
+MariaDB [(none)]> show global variables like '%log_bin%';Copy
+# Show binary logs
+
+MariaDB [(none)]> show binary logs;Copy
+Step 6. Execute below command to Lock Tables & take backup and view the File & Position of Master Server.
+
+MariaDB [(none)]> FLUSH TABLES WITH READ LOCK;Copy
+C:/path >mysqldump -u root -p –all-databases –master-data > data.sqlCopy
+Note: Path will be mysqldump.exe path.. It will be inside the bin folder.
+
+MariaDB [(none)]> show master status;Copy
++------------------+----------+--------------+------------------+
+| File             | Position | Binlog_Do_DB | Binlog_Ignore_DB |
++------------------+----------+--------------+------------------+
+| mysql-bin.000001 |    764   |    |                  |
++------------------+----------+--------------+------------------+
+1 row in set (0.00 sec)Copy
+PART - 2 - In Slave Server
+
+------------------------------------------ 
+
+Step 7. Login to Slave Server. Edit & Modify the Configuration file of MySql Server.
+
+# Find the following line:
+
+bind-address = 127.0.0.1Copy
+# Replace it with the following line:
+
+bind-address = Slave-Server-IPCopy
+#log-bin Configuration in my.ini
+
+log-bin="C:/mysql_slave_logs/log-bin.log"
+
+server-id = 2
+
+# Restart Mysql ServerCopy
+Step 8. Login to Mysql in Slave Server.
+
+# mysql -u root -pCopy
+Step 9. Import Data Dump
+
+mysql -u root -p < data.sqlCopy
+Step 10. Specify the following details as given below & make sure to Replace the following settings with your settings.
+
+MASTER_HOST     :   IP Address of Master server
+
+MASTER_USER     :   Replication User of Master server that we had created in previous steps.
+
+MASTER_PASSWORD :   Replication User Password of Master server that we had created in previous steps.
+
+MASTER_LOG_FILE :   Your Value of Master Log File of Master server.
+
+MASTER_LOG_POS  :   Your Value of Master Log Position of Master server.
+
+MariaDB [(none)]> STOP SLAVE; 
+
+MariaDB [(none)]>  CHANGE MASTER TO MASTER_HOST = 'localhost', MASTER_USER = 'mysqlrepli', MASTER_PASSWORD = 'admin@123', MASTER_LOG_FILE = 'mysql-bin.000001', MASTER_LOG_POS = 420;
+
+MariaDB [(none)]>  START SLAVE;Copy
+MariaDB [(none)]>  show databases;Copy
+MariaDB [(none)]>  SHOW SLAVE STATUS;Copy
+### Don’t forget to unlock the tables.
+
+MariaDB [(none)]>  UNLOCK TABLES;Copy
+PART - 3 - Testing for replication work
+
+-------------------------------------------------------------
+
+Step 10. Login to Master Server. Login to Mysql Server
+
+# mysql -u root -pCopy
+Step 11. For testing a Replication we need to create a new database, it will automatically replicate on Slave Server.
+
+MariaDB [(none)]>   create database chiragdb;Copy
+Step 12. Login to Slave Server. Login to Mysql Server
+
+# mysql -u root -pCopy
+Step 13. View your Replicated Database  by using below command.
+
+MariaDB [(none)]>   show databases;

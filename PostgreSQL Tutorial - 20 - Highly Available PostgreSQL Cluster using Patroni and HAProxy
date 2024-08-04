@@ -1,0 +1,386 @@
+Architecture:
+
+OS: Ubuntu 22.04
+
+Postgres version: 14
+
+Machine: node1                   IP: <node1_ip>                 Role: Postgresql, Patroni
+
+Machine: node2                   IP: <node2_ip>                 Role: Postgresql, Patroni
+
+Machine: node3                   IP: <node3_ip>                 Role: Postgresql, Patroni
+
+Machine: etcdnode              IP: <etcdnode_ip>           Role: etcd
+
+Machine: haproxynode       IP: <haproxynode_ip>     Role: HA Proxy
+
+In my case:
+
+Machine: node1 IP: 192.168.32.130 Role: Postgresql, Patroni
+Machine: node2 IP: 192.168.32.131 Role: Postgresql, Patroni
+Machine: node3 IP: 192.168.32.xxx Role: Postgresql, Patroni
+Machine: etcdnode IP: 192.168.32.140 Role: etcd
+Machine: haproxynode IP: 192.168.32.135 Role: HA ProxyCopy
+Step-by-step instructions guide
+
+Step 1 –  Setup node1, node2, node3:
+
+sudo apt update
+sudo hostnamectl set-hostname node1
+--sudo hostnamectl set-hostname node2
+--sudo hostnamectl set-hostname node3
+sudo apt install net-tools
+sudo apt install postgresql postgresql-server-dev-14
+sudo systemctl stop postgresql
+sudo ln -s /usr/lib/postgresql/14/bin/* /usr/sbin/
+sudo apt -y install python3 python3-pip
+sudo apt install python3-testresources
+sudo pip3 install --upgrade setuptools
+sudo pip3 install psycopg2
+sudo pip3 install patroni
+sudo pip3 install python-etcdCopy
+Step 2 –  Setup etcdnode:
+
+sudo apt update
+sudo hostnamectl set-hostname etcdnode
+sudo apt install net-tools
+sudo apt -y install etcd
+Copy
+Step 3 – Setup haproxynode:
+
+sudo apt update
+sudo hostnamectl set-hostname haproxynode
+sudo apt install net-tools
+sudo apt -y install haproxyCopy
+Step 4 – Configure etcd on the etcdnode: 
+
+sudo vi /etc/default/etcd   Copy
+ETCD_LISTEN_PEER_URLS="http://192.168.32.140:2380"
+ETCD_LISTEN_CLIENT_URLS="http://localhost:2379,http://192.168.32.140:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.32.140:2380"
+ETCD_INITIAL_CLUSTER="default=http://192.168.32.140:2380,"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.32.140:2379"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
+ETCD_INITIAL_CLUSTER_STATE="new"Copy
+sudo systemctl restart etcd Copy
+sudo systemctl status etcdCopy
+OUTPUT:--
+
+root@etcdnode:/home/etcdnode# sudo systemctl status etcd
+● etcd.service - etcd - highly-available key value store
+     Loaded: loaded (/lib/systemd/system/etcd.service; enabled; vendor preset: enabled)
+     Active: active (running) since Thu 2024-05-09 11:48:58 UTC; 31min ago
+       Docs: https://etcd.io/docs
+             man:etcd
+   Main PID: 2714 (etcd)
+      Tasks: 8 (limit: 2177)
+     Memory: 9.1M
+        CPU: 28.560s
+     CGroup: /system.slice/etcd.service
+             └─2714 /usr/bin/etcd
+
+May 09 11:48:58 etcdnode etcd[2714]: 8e9e05c52164694d became candidate at term 3
+May 09 11:48:58 etcdnode etcd[2714]: 8e9e05c52164694d received MsgVoteResp from 8e9e05c52164694d at term 3
+May 09 11:48:58 etcdnode etcd[2714]: 8e9e05c52164694d became leader at term 3
+May 09 11:48:58 etcdnode etcd[2714]: raft.node: 8e9e05c52164694d elected leader 8e9e05c52164694d at term 3
+May 09 11:48:58 etcdnode etcd[2714]: published {Name:etcdnode ClientURLs:[http://192.168.32.140:2379]} to cluster cdf818194e3a8c32
+May 09 11:48:58 etcdnode etcd[2714]: ready to serve client requests
+May 09 11:48:58 etcdnode etcd[2714]: serving insecure client requests on 192.168.32.140:2379, this is strongly discouraged!
+May 09 11:48:58 etcdnode etcd[2714]: ready to serve client requests
+May 09 11:48:58 etcdnode etcd[2714]: serving insecure client requests on 127.0.0.1:2379, this is strongly discouraged!
+May 09 11:48:58 etcdnode systemd[1]: Started etcd - highly-available key value store.
+root@etcdnode:/home/etcdnode#Copy
+curl http://192.168.32.140:2380/membersCopy
+OUTPUT:--
+
+root@etcdnode:/home/etcdnode# curl http://192.168.32.140:2380/members
+[{"id":10276657743932975437,"peerURLs":["http://localhost:2380"],"name":"etcdnode","clientURLs":["http://192.168.32.140:2379"]}]Copy
+root@etcdnode:/home/etcdnode#
+
+Step 5-Part1 – Configure Patroni on the node1:
+
+sudo vi /etc/patroni.ymlCopy
+scope: postgres
+namespace: /db/
+name: node1
+
+restapi:
+    listen: 192.168.32.130:8008
+    connect_address: 192.168.32.130:8008
+
+etcd:
+    host: 192.168.32.140:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+
+  initdb:
+  - encoding: UTF8
+  - data-checksums
+
+  pg_hba:
+  - host replication replicator 127.0.0.1/32 md5
+  - host replication replicator 192.168.32.130/0 md5
+  - host replication replicator 192.168.32.131/0 md5
+  - host all all 0.0.0.0/0 md5
+
+  users:
+    admin:
+      password: admin
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  listen: 192.168.32.130:5432
+  connect_address: 192.168.32.130:5432
+  data_dir: /data/patroni
+  pgpass: /tmp/pgpass
+  authentication:
+    replication:
+      username: replicator
+      password: admin@123
+    superuser:
+      username: postgres
+      password: admin@123
+  parameters:
+      unix_socket_directories: '.'
+
+tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: falseCopy
+sudo mkdir -p /data/patroni
+sudo chown postgres:postgres /data/patroni
+sudo chmod 700 /data/patroniCopy
+sudo vi /etc/systemd/system/patroni.serviceCopy
+[Unit]
+Description=High availability PostgreSQL Cluster
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=postgres
+Group=postgres
+ExecStart=/usr/local/bin/patroni /etc/patroni.yml
+KillMode=process
+TimeoutSec=30
+Restart=no
+
+[Install]
+WantedBy=multi-user.targCopy
+Step 5-Part2 – Configure Patroni on the node2:
+
+sudo vi /etc/patroni.ymlCopy
+scope: postgres
+namespace: /db/
+name: node2
+
+restapi:
+    listen: 192.168.32.131:8008
+    connect_address: 192.168.32.131:8008
+
+etcd:
+    host: 192.168.32.140:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+
+  initdb:
+  - encoding: UTF8
+  - data-checksums
+
+  pg_hba:
+  - host replication replicator 127.0.0.1/32 md5
+  - host replication replicator 192.168.32.130/0 md5
+  - host replication replicator 192.168.32.131/0 md5
+  - host all all 0.0.0.0/0 md5
+
+  users:
+    admin:
+      password: admin
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  listen: 192.168.32.131:5432
+  connect_address: 192.168.32.131:5432
+  data_dir: /data/patroni
+  pgpass: /tmp/pgpass
+  authentication:
+    replication:
+      username: replicator
+      password: admin@123
+    superuser:
+      username: postgres
+      password: admin@123
+  parameters:
+      unix_socket_directories: '.'
+
+tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: falseCopy
+sudo mkdir -p /data/patroni
+sudo chown postgres:postgres /data/patroni
+sudo chmod 700 /data/patroniCopy
+sudo vi /etc/systemd/system/patroni.serviceCopy
+[Unit]
+Description=High availability PostgreSQL Cluster
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=postgres
+Group=postgres
+ExecStart=/usr/local/bin/patroni /etc/patroni.yml
+KillMode=process
+TimeoutSec=30
+Restart=no
+
+[Install]
+WantedBy=multi-user.targCopy
+Step 6 – Start Patroni service on the node1, on the node2 and on the node3:
+
+sudo systemctl start patroni
+
+sudo systemctl status patroniCopy
+OUTPUT:-
+
+root@node1:/home/node1# sudo systemctl status patroni
+● patroni.service - High availability PostgreSQL Cluster
+     Loaded: loaded (/etc/systemd/system/patroni.service; disabled; vendor preset: enabled)
+     Active: active (running) since Thu 2024-05-09 12:11:01 UTC; 8min ago
+   Main PID: 6710 (patroni)
+      Tasks: 14 (limit: 2177)
+     Memory: 65.8M
+        CPU: 4.057s
+     CGroup: /system.slice/patroni.service
+             ├─6710 /usr/bin/python3 /usr/local/bin/patroni /etc/patroni.yml
+             ├─6727 postgres -D /data/patroni --config-file=/data/patroni/postgresql.conf --listen_addresses=192.168.32.130 --port=5432 --cluster_name=postgres --wal_level=replica --hot_st>
+             ├─6729 "postgres: postgres: startup recovering 000000020000000000000003" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" >
+             ├─6732 "postgres: postgres: checkpointer " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" >
+             ├─6733 "postgres: postgres: background writer " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ">
+             ├─6734 "postgres: postgres: stats collector " "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" >
+             ├─6735 "postgres: postgres: walreceiver streaming 0/3000B88" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" >
+             ├─6737 "postgres: postgres: postgres postgres 192.168.32.130(59792) idle" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "">
+             └─6740 "postgres: postgres: postgres postgres 192.168.32.130(46220) idle" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "">
+May 09 12:17:29 node1 patroni[6710]: 2024-05-09 12:17:29,390 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:17:39 node1 patroni[6710]: 2024-05-09 12:17:39,398 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:17:49 node1 patroni[6710]: 2024-05-09 12:17:49,396 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:17:59 node1 patroni[6710]: 2024-05-09 12:17:59,392 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:18:09 node1 patroni[6710]: 2024-05-09 12:18:09,398 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:18:19 node1 patroni[6710]: 2024-05-09 12:18:19,399 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:18:29 node1 patroni[6710]: 2024-05-09 12:18:29,390 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:18:39 node1 patroni[6710]: 2024-05-09 12:18:39,398 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:18:49 node1 patroni[6710]: 2024-05-09 12:18:49,399 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+May 09 12:18:59 node1 patroni[6710]: 2024-05-09 12:18:59,390 INFO: no action. I am (node1), a secondary, and following a leader (node2)
+lines 1-28/28 (END)Copy
+Step 7 – Configuring HA Proxy on the node haproxynode: 
+
+sudo vi /etc/haproxy/haproxy.cfgCopy
+Replace its context with this:
+
+global
+        maxconn 100
+        log     127.0.0.1 local2
+
+defaults
+        log global
+        mode tcp
+        retries 2
+        timeout client 30m
+        timeout connect 4s
+        timeout server 30m
+        timeout check 5s
+
+listen stats
+    mode http
+    bind *:7000
+    stats enable
+    stats uri /
+
+listen postgres
+    bind *:5000
+    option httpchk
+    http-check expect status 200
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+    server node1 192.168.32.130:5432 maxconn 100 check port 8008
+    server node2 192.168.32.131:5432 maxconn 100 check port 8008Copy
+sudo systemctl restart haproxyCopy
+sudo systemctl status haproxyCopy
+OUTPUT:--
+
+root@haproxynode:/etc/haproxy# sudo systemctl status haproxy
+● haproxy.service - HAProxy Load Balancer
+     Loaded: loaded (/lib/systemd/system/haproxy.service; enabled; vendor preset: enabled)
+     Active: active (running) since Thu 2024-05-09 12:10:02 UTC; 8min ago
+       Docs: man:haproxy(1)
+             file:/usr/share/doc/haproxy/configuration.txt.gz
+    Process: 2680 ExecStartPre=/usr/sbin/haproxy -Ws -f $CONFIG -c -q $EXTRAOPTS (code=exited, status=0/SUCCESS)
+   Main PID: 2682 (haproxy)
+      Tasks: 3 (limit: 2177)
+     Memory: 3.4M
+        CPU: 485ms
+     CGroup: /system.slice/haproxy.service
+             ├─2682 /usr/sbin/haproxy -Ws -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -S /run/haproxy-master.sock
+             └─2684 /usr/sbin/haproxy -Ws -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -S /run/haproxy-master.sock
+
+May 09 12:10:02 haproxynode systemd[1]: Starting HAProxy Load Balancer...
+May 09 12:10:02 haproxynode haproxy[2682]: [NOTICE]   (2682) : New worker #1 (2684) forked
+May 09 12:10:02 haproxynode systemd[1]: Started HAProxy Load Balancer.
+May 09 12:10:03 haproxynode haproxy[2684]: [WARNING]  (2684) : Server postgres/node2 is DOWN, reason: Layer7 wrong status, code: 503, info: "Service Unavailable", check duration: 5ms. 1 ac>
+May 09 12:10:42 haproxynode haproxy[2684]: [WARNING]  (2684) : Server postgres/node2 is UP, reason: Layer7 check passed, code: 200, check duration: 4ms. 2 active and 0 backup servers onlin>
+May 09 12:10:44 haproxynode haproxy[2684]: [WARNING]  (2684) : Server postgres/node1 is DOWN, reason: Layer4 connection problem, info: "Connection refused", check duration: 1ms. 1 active a>
+lines 1-20/20 (END)Copy
+Step 8 – Testing High Availability Cluster Setup of PostgreSQL:
+
+http://<haproxynode_ip>:7000/>Copy
+Check the output
+
+
+
+sudo systemctl stop patroniCopy
+In this case, the second Postgres server is promoted to master.
+
+ Step 9 – Connect Postgres clients to the HAProxy IP address:
+
+psql -h <haproxynode_ip> -p 5000 -U postgresCopy
+psql -h 192.168.32.135 -p 5000 -U postgresCopy
+Password for user postgres: 
+
+db_name=>Copy
+root@node1:/home/node1# patronictl -c /etc/patroni.yml list
+
++ Cluster: postgres (7366967472395659584) ------+----+-----------+
+| Member | Host           | Role    | State     | TL | Lag in MB |
++--------+----------------+---------+-----------+----+-----------+
+| node1  | 192.168.32.130 | Replica | streaming |  2 |         0 |
+| node2  | 192.168.32.131 | Leader  | running   |  2 |           |
++--------+----------------+---------+-----------+----+-----------+
+
+root@node1:/home/node1# Copy
+Step 10 – Failover test:
+
+On one of the nodes run:
+
+sudo systemctl stop patroni

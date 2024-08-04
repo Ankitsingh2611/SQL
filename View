@@ -1,0 +1,5 @@
+Select * from employee;
+
+create VIEW custom_view AS SELECT fname, age FROM Employe;
+
+Select * FROM custom_view;

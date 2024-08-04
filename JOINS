@@ -1,0 +1,95 @@
+# INNER JOINS - To apply joins there should be a a common attribute in both tables.
+
+#                 left                   right
+#                 1                        1
+#                 2                        2
+#                 3                        3
+                
+#             result = 1,2,3 of both
+            
+            
+            
+# OUTER JOIN
+# An outer join returns all records from both tables, with NULL in the columns where there is no match.
+
+#    Left join 
+#             left                          right
+#             1                              1
+#             2                              2
+#             3                              
+#             4
+            
+#         result = 1      1
+#                  2      2
+#                  3      NULL
+#                  4      NULL
+                 
+#     Right Join
+    
+    
+    
+#     Full Join
+    
+    
+    
+# CROSS JOIN
+
+
+# SELF JOIN
+                 
+                 
+
+
+
+
+
+# let three table project employee(left) client(right)
+
+# Inner join 
+# select e.id, e.fname, e.lname, p.id, p.name from employee as e
+# INNER JOIN project as p ON e.id = p.empID;
+
+
+
+# Outer Join
+# Left Join 
+# select e.id, e.fname, e.lname, p.id, p.name from employee as e
+# LEFT JOIN project as p ON e.id = p.empID;
+
+# Right Join 
+# select e.id, e.fname, e.lname, p.id, p.name from employee as e
+# RIGHT JOIN project as p ON e.id = p.empID;
+
+# Full Join 
+# select e.id, e.fname, e.lname, p.id, p.name from employee as e
+# FULL JOIN project as p ON e.id = p.empID;
+
+
+# Cross Join 
+# select e.id, e.fname, e.lname, p.id, p.name from employee as e
+# CROSS JOIN project as p;
+
+
+# Self Join 
+# select e.id, e.fname, e.lname, p.id, p.name from employee as e
+# INNER JOIN employee as p ON e.id = p.id;
+
+
+
+# Join wihout using JOIN keyword
+# select * FROM lefttable, rghttable WHERE lefttable.id = righttable.id;
+
+
+
+
+#    The following are the most common types of joins:
+#    1. INNER JOIN: Returns records that have matching values in both tables.
+#    2. LEFT JOIN: Returns all records from the left table, and the matched records from
+#    the right table. If there is no match, the result is NULL on the right side.
+#    3. RIGHT JOIN: This is similar to a LEFT JOIN, but returns all records from
+#    the right table, and the matched records from the left table.
+#    4. FULL OUTER JOIN: Returns all records when there is a match in either left or
+#    right table records.
+#    5. CROSS JOIN: Returns the Cartesian product of rows from two or more tables.
+   
+   

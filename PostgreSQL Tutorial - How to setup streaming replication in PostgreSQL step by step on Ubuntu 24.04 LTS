@@ -1,0 +1,125 @@
+What Is PostgreSQL Replication? 
+
+The process of copying data from a PostgreSQL database server to another server is called PostgreSQL Replication. The source database server is usually called the Master server, whereas the database server receiving the copied data is called the Replica server.
+
+In this Video, we will see how to setup streaming replication in PostgreSQL 16 step by step on Ubuntu 24.04.
+
+There is no recovery.conf file in standby anymore and that the replication setup (streaming replication) as slightly changed in PostgreSQL 16.
+
+1. Streaming replication, a standby (replication slave) database server is configured to connect to the master/primary server, which streams WAL records to the standby as they are generated, without waiting for the WAL file to be filled.
+
+2. By default, streaming replication is asynchronous where data is written to the standby server(s) after a transaction has been committed on the primary server. This means that there is a small delay between committing a transaction in the master server and the changes becoming visible in the standby server.
+
+This guide shows how to set up a Postgresql 16 master-standby(slave) streaming replication on Ubuntu 24.04 LTS. We will use “replication slots” for the standby as a solution to avoid the master server from recycling old WAL segments before the standby has received them.
+
+PostgreSQL Master name and IP address:
+
+PGMaster and 192.168.32.128 
+Copy
+PostgreSQL Slave/Replica name and IP address:
+
+PGSlave and 192.168.32.129 
+Copy
+On Master and Slave servers, PostgreSQL 16 must have installed.
+
+Or you can install with below command
+
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+Copy
+Step1: Configurations on master server
+
+1. On master server, configure the IP address(es) listen to for connections from clients in postgresql.conf by removing # in front of listen_address and give *. Which means listen connections from all.
+
+listen_addresses = '*'
+Copy
+2. Now, connect to PostgreSQL on Master server and create replica login.
+
+CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'admin@123';
+Copy
+3. Enter the following entry pg_hba.conf file which is located in /etc/postgresql/16/main on Ubuntu(debian systems).
+
+host    replication     replicator      192.168.32.129/24      md5
+Copy
+How to setup streaming replication in PostgreSQL step by step on Ubuntu
+
+4. Now, restart the PostgreSQL on Master server by using below command.
+
+sudo systemctl restart postgresql
+Copy
+---------------------------------
+
+Step2: Configurations on slave(standby) server
+
+1. We have to stop PostgreSQL on Slave server by using following command.
+
+sudo systemctl stop postgresql
+Copy
+2. Now, switch to postgres user and take backup of main(data) directory.
+
+su - postgres
+
+cp -R /var/lib/postgresql/16/main/ /var/lib/postgresql/16/main_old/
+Copy
+3. Now, remove the contents of main(data) directory on slave server.
+
+rm -rf /var/lib/postgresql/16/main/
+Copy
+4. Now, use basebackup to take the base backup with the right ownership with postgres(or any user with right permissions).
+
+pg_basebackup -h 192.168.32.128 -D /var/lib/postgresql/16/main/ -U replicator -P -v -R -X stream -C -S slaveslot1
+Copy
+Then provide the password for user replicator created in master server.
+
+pg_basebackup: initiating base backup, waiting for checkpoint to complete
+pg_basebackup: checkpoint completed
+pg_basebackup: write-ahead log start point: 0/11000028 on timeline 1
+pg_basebackup: starting background WAL receiver
+pg_basebackup: created replication slot "slaveslot1"
+    0/74620 kB (0%), 0/1 tablespace (.../postgresql/16/main/backup_13369/74620 kB (17%), 0/1 tablespace (...stgresql/16/main/base/491532739/74620 kB (43%), 0/1 tablespace (...stgresql/16/main/base/409651750/74620 kB (69%), 0/1 tablespace (...stgresql/16/main/base/655469912/74620 kB (93%), 0/1 tablespace (...stgresql/16/main/base/134674630/74630 kB (100%), 0/1 tablespace (...gresql/16/main/global/pg_74630/74630 kB (100%), 1/1 tablespace                              
+pg_basebackup: write-ahead log end point: 0/11000100
+pg_basebackup: waiting for background process to finish streaming ...
+pg_basebackup: syncing data to disk ...
+pg_basebackup: base backup completedCopy
+5. Notice that standby.signal is created and the connection settings are appended to postgresql.auto.conf.
+
+ls -ltrh /var/lib/postgresql/16/main/Copy
+6. A replication slave will run in “Hot Standby” mode if the hot_standby parameter is set to on (the default value) in postgresql.conf and there is a standby.signal file present in the data directory.
+
+7. Now connect the master server, you should be able to see the replication slot called slotslave1 when you open the pg_replication_slots view as follows.
+
+SELECT * FROM pg_replication_slots;Copy
+Step3. Test replication setup
+
+1. Now start PostgreSQL on slave(standby) server.
+
+systemctl start postgresqlCopy
+2. Now, try to create object or database in slave(standby) server. It throws error, because slave(standby) is read-only server.
+
+create database slave1;Copy
+3. WE can check the status on standby using below command.
+
+SELECT * FROM pg_stat_wal_receiver;Copy
+4. Now, verify the replication type synchronous or aynchronous using below command on master database server.
+
+SELECT * FROM pg_stat_replication;Copy
+5. Lets create a database in master server and verify its going to replicate to slave or not.
+
+create database stream;Copy
+6. Now, connect to slave and verify the database copied or not.
+
+select datname from pg_database;Copy
+7. If you want to enable synchronous, the run the below command on master database server and reload postgresql service.
+
+ALTER SYSTEM SET synchronous_standby_names TO  '*';Copy
+systemctl reload postgresqlCopy
+That's all. We have successfully setup streaming replication in PostgreSQL step by step on Ubuntu.
+
+Test Replication.
+
+On master:
+
+select * from pg_stat_replication;Copy
+On replica (streaming replication in my case):
+
+select * from pg_stat_wal_receiver;

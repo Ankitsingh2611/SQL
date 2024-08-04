@@ -1,0 +1,20 @@
+1. UNION
+2. INTERSECT
+3. MINUS
+
+
+
+UNION:
+select * from dept1
+UNION
+select * from dept2;
+
+
+INTERSECT
+select dept1.* from dept1 INNER JOIN dept2 using(empid);
+
+
+
+MINUS  T1-T2
+select dept1.* from dept1 LEFT JOIN dept2 using(empid)
+where dept2.empid is null;

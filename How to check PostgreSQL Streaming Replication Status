@@ -1,0 +1,16 @@
+On master Server:
+
+root@serverdb01:/home/dept# su - postgres
+postgres@serverdb01:~$ psql
+psql (14.10 (Ubuntu 14.10-0ubuntu0.22.04.1))
+Type "help" for help.
+
+postgres=# select * from pg_stat_replication;Copy
+On replica Server (streaming replication in my case):
+
+root@repserverdb02:/home/dept# su - postgres
+postgres@repserverdb02:~$ psql
+psql (14.10 (Ubuntu 14.10-0ubuntu0.22.04.1))
+Type "help" for help.
+
+postgres=# select * from pg_stat_wal_receiver;

@@ -1,0 +1,15 @@
+Caution: Do not delete the 'ibdata1' file as it may result in the irreversible loss of all your databases.
+
+Instead, first try using the MySQL backup folder which is included with XAMPP. So do next steps:
+
+1. go to C:\xampp\mysql (where Xampp is Installed)
+
+2. Rename folder data to data_old
+
+3. Make a copy of backup  folder and name it as data
+
+4. Copy all your database folders from data_old into data (except mysql, performance_schema, and phpmyadmin folders)
+
+5. Copy data_old/ibdata1 file into data folder
+
+6. Now, Start MySQL from XAMPP control panel
